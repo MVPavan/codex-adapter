@@ -13,6 +13,8 @@ import process from "node:process";
 const SANDBOX_MODES = new Set(["read-only", "workspace-write", "danger-full-access"]);
 const EFFORT_LEVELS = new Set(["minimal", "low", "medium", "high", "xhigh"]);
 const APPROVAL_POLICIES = new Set(["untrusted", "on-failure", "on-request", "never"]);
+// Codex prints `session id: <uuid>` in its startup banner (on stderr).
+const SESSION_ID_RE = /session id:\s*([0-9a-fA-F-]{8,})/i;
 
 const HELP = `codex-run — call OpenAI Codex (gpt-5.x) via \`codex exec\`.
 
@@ -152,16 +154,33 @@ async function main() {
   if (!prompt) prompt = await readStdin();
   if (!prompt) fail("no prompt provided (pass it as an argument or pipe it via stdin)");
 
+  // stdout stays clean (Codex's answer, or raw JSONL). stderr is piped so we can
+  // pass progress through live AND scan the banner for the session id, then print
+  // a one-line resume hint at the end.
   const child = spawn("codex", buildCodexArgs(opts, prompt), {
-    stdio: ["ignore", "inherit", "inherit"],
+    stdio: ["ignore", "inherit", "pipe"],
   });
+
+  let sessionId = null;
+  let scanBuffer = "";
+  child.stderr.on("data", (chunk) => {
+    process.stderr.write(chunk);
+    if (sessionId || scanBuffer.length > 65536) return;
+    scanBuffer += chunk.toString("utf8");
+    const match = scanBuffer.match(SESSION_ID_RE);
+    if (match) sessionId = match[1];
+  });
+
   child.on("error", (err) => {
     if (err.code === "ENOENT") {
       fail("`codex` not found on PATH. Install it with `npm i -g @openai/codex` and run `codex login`.");
     }
     fail(`failed to launch codex: ${err.message}`);
   });
-  child.on("exit", (code, signal) => {
+  child.on("close", (code, signal) => {
+    if (sessionId && !opts.json) {
+      process.stderr.write(`\n[codex-bridge] session ${sessionId} — resume: --resume ${sessionId} "<next prompt>"\n`);
+    }
     if (signal) {
       process.stderr.write(`codex-run: codex terminated by signal ${signal}\n`);
       process.exit(1);
