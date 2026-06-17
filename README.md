@@ -1,4 +1,4 @@
-# codex-bridge
+# codex-adapter
 
 Call **OpenAI Codex** (gpt-5.x) from **Claude Code** — a clean, dependency-free
 plugin built around a single primitive: `codex exec`.
@@ -57,7 +57,7 @@ echo "Review this diff for bugs" | node scripts/codex-run.mjs -m gpt-5.5 -e high
 
 # Continue a previous Codex session.
 # Every run prints a resume hint to stderr, e.g.:
-#   [codex-bridge] session 019ec... — resume: --resume 019ec... "<next prompt>"
+#   [codex-adapter] session 019ec... — resume: --resume 019ec... "<next prompt>"
 node scripts/codex-run.mjs --resume <session-id> "Now add tests for that fix"
 
 # Raw event stream (JSONL) for progress / capturing the session id

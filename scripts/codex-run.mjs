@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// codex-bridge — a thin, dependency-free wrapper around `codex exec`.
+// codex-adapter — a thin, dependency-free wrapper around `codex exec`.
 //
 // Why this is enough: `codex exec` boots an in-process Codex app-server over the
 // shared `codex-core` engine, so it produces the exact same results as the full
@@ -179,7 +179,7 @@ async function main() {
   });
   child.on("close", (code, signal) => {
     if (sessionId && !opts.json) {
-      process.stderr.write(`\n[codex-bridge] session ${sessionId} — resume: --resume ${sessionId} "<next prompt>"\n`);
+      process.stderr.write(`\n[codex-adapter] session ${sessionId} — resume: --resume ${sessionId} "<next prompt>"\n`);
     }
     if (signal) {
       process.stderr.write(`codex-run: codex terminated by signal ${signal}\n`);

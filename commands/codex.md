@@ -9,7 +9,7 @@ Request: $ARGUMENTS
 
 Do this:
 
-1. Run the Codex bridge via Bash:
+1. Run the Codex adapter via Bash:
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-run.mjs" -C "$(pwd)" "<the request above>"`
    - Runs **read-only** by default — Codex can read the repo and answer, but not edit.
    - If the request clearly asks Codex to **modify files**, add `--writable`.

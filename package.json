@@ -1,5 +1,5 @@
 {
-  "name": "codex-bridge",
+  "name": "codex-adapter",
   "version": "0.1.0",
   "description": "Call OpenAI Codex from Claude Code via `codex exec`.",
   "type": "module",
