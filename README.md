@@ -78,7 +78,27 @@ node scripts/codex-run.mjs --json "Summarize the README"
 | `--json` | — | Stream raw JSONL events |
 | `--skip-git-check` | — | Allow running outside a git repo |
 
-Codex streams progress to **stderr** and prints its final answer to **stdout**.
+### Reading the output
+
+The two streams are kept strictly separate:
+
+- **stdout** — Codex's final answer, and nothing else.
+- **stderr** — the startup banner (including the `session id`), the live
+  progress transcript, tool-call traces, and the `[codex-adapter]` resume hint.
+
+Pick the stream you want:
+
+| You want… | Do this |
+|-----------|---------|
+| Just the answer | read **stdout**, discard stderr: `node scripts/codex-run.mjs "…" 2>/dev/null` |
+| Answer + live progress (human) | run normally — progress on stderr, answer on stdout |
+| A machine-readable event stream | add `--json` and parse the final agent-message event |
+
+**Why the answer can look doubled:** in human mode `codex exec` echoes the agent
+message in its stderr transcript (`codex\n<answer>`) *and* prints the final
+answer on stdout. If you merge the streams — a terminal, `2>&1`, or a tool that
+captures both — you see it twice. Keep the streams separate (or read stdout
+only) and the answer appears exactly once.
 
 ## Design notes
 
