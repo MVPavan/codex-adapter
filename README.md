@@ -18,11 +18,12 @@ codex app-server ─────────────────────
 codex mcp-server ────────────────────────────────> codex-core   (parallel, exposes 2 tools)
 ```
 
-So `codex exec` runs the **identical** agent/turn engine as the full
-`codex app-server` — it just exposes a one-shot slice. The only things
-`app-server` adds that `exec` does not are **token-level streaming**,
-**mid-turn interactive approvals**, **steer/interrupt**, and **thread
-fork/rollback/compact**. If you don't need those, `exec` is the same result
+So `codex exec` runs on the **same `codex-core` engine** as `codex app-server` —
+it's the stable, documented non-interactive surface over that engine, not a
+reduced one. `app-server` is the richer *protocol*: it adds **token-level
+streaming**, **mid-turn interactive approvals**, **steer/interrupt**, and
+**thread fork/rollback/compact**. Those are *interaction* features, not a
+different result — for one-shot delegation `exec` produces the same turn outcome
 with none of the ceremony.
 
 And because each `codex exec` is its own OS process, **concurrency is free** —
@@ -140,7 +141,8 @@ the global default. So `--role implement -s read-only` stays read-only, and
 `--role research -e high` bumps the effort. Roles never change the safe default
 unless you name one.
 
-**Adding a role:** drop a `roles/<name>.md` file with optional front-matter:
+**Adding a role:** drop a `roles/<name>.md` file with optional front-matter (see
+[docs/writing-roles.md](docs/writing-roles.md) for how to write a good role prompt):
 
 ```markdown
 ---
