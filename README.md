@@ -75,6 +75,7 @@ node scripts/codex-run.mjs --json "Summarize the README"
 | `-w, --writable` | — | Shortcut for `--sandbox workspace-write` |
 | `-a, --approval <pol>` | Codex default | `untrusted\|on-failure\|on-request\|never` |
 | `--resume <id>` | — | Continue a prior session by id |
+| `--role <name>` | — | Apply a role preset (see [Roles](#roles)) |
 | `--json` | — | Stream raw JSONL events |
 | `--skip-git-check` | — | Allow running outside a git repo |
 
@@ -99,6 +100,59 @@ message in its stderr transcript (`codex\n<answer>`) *and* prints the final
 answer on stdout. If you merge the streams — a terminal, `2>&1`, or a tool that
 captures both — you see it twice. Keep the streams separate (or read stdout
 only) and the answer appears exactly once.
+
+## Roles
+
+A **role** is a reusable preset — a curated prompt plus default sandbox/effort and
+optional config — stored as `roles/<name>.md`. Pass `--role <name>` to apply one;
+the role's prompt is prepended to whatever task you give (built-in roles write theirs as XML-tagged blocks tuned for GPT-5.x). Roles are opt-in: with no
+`--role`, the runner behaves exactly as the free-form examples above.
+
+Built-in roles:
+
+| Role | Sandbox | Effort | Purpose |
+|------|---------|--------|---------|
+| `review` | read-only | high | adversarial code review — find bugs/risks in the diff |
+| `diagnose` | read-only | xhigh | root-cause a failure without changing files |
+| `implement` | workspace-write | high | make a bounded change and verify it |
+| `research` | read-only | xhigh | investigate with web search; gather + cite + synthesize |
+| `second-opinion` | read-only | xhigh | critique a decision/design/plan — anti-sycophancy, web search |
+
+```bash
+# Review the current diff
+node scripts/codex-run.mjs --role review
+
+# Root-cause a failure
+node scripts/codex-run.mjs --role diagnose "the login test flakes intermittently"
+
+# Implement a bounded change (writable)
+node scripts/codex-run.mjs --role implement "add a --version flag to the CLI"
+
+# Research with web search
+node scripts/codex-run.mjs --role research "current best practices for rate-limiting"
+
+# Second opinion on a decision or design (reads files for context; web search on)
+node scripts/codex-run.mjs --role second-opinion "should we keep the adapter stateless instead of a daemon? <your reasoning>"
+```
+
+**Precedence:** an explicit flag always overrides a role default, which overrides
+the global default. So `--role implement -s read-only` stays read-only, and
+`--role research -e high` bumps the effort. Roles never change the safe default
+unless you name one.
+
+**Adding a role:** drop a `roles/<name>.md` file with optional front-matter:
+
+```markdown
+---
+sandbox: read-only               # optional; explicit -s/-w still overrides
+effort: high                     # optional; explicit -e still overrides
+config: tools.web_search=true    # optional, repeatable; passed through as `-c key=value`
+---
+<the role's prompt prefix>
+```
+
+> `research` enables web search via `tools.web_search=true`, which requires a
+> non-minimal effort (Codex rejects `web_search` with `effort=minimal`).
 
 ## Design notes
 

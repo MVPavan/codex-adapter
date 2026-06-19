@@ -34,6 +34,7 @@ Options:
   -w, --writable         Shortcut for --sandbox workspace-write (lets Codex edit files).
   -a, --approval <pol>   Approval policy: ${[...APPROVAL_POLICIES].join(" | ")} (default: Codex's own).
       --resume <id>      Continue a prior Codex session by id.
+      --role <name>      Apply a role preset from roles/<name>.md (prompt + sandbox/effort/config).
       --json             Stream raw JSONL events instead of just the final answer.
       --skip-git-check   Allow running outside a git repository.
   -h, --help             Show this help.
@@ -52,9 +53,10 @@ function parseArgs(argv) {
     model: null,
     effort: null,
     cd: null,
-    sandbox: "read-only",
+    sandbox: null,
     approval: null,
     resume: null,
+    role: null,
     json: false,
     skipGitCheck: false,
     promptParts: [],
@@ -104,6 +106,9 @@ function parseArgs(argv) {
       case "--resume":
         opts.resume = next();
         break;
+      case "--role":
+        opts.role = next();
+        break;
       case "--json":
         opts.json = true;
         break;
@@ -119,7 +124,7 @@ function parseArgs(argv) {
         opts.promptParts.push(arg);
     }
   }
-  if (!SANDBOX_MODES.has(opts.sandbox)) {
+  if (opts.sandbox !== null && !SANDBOX_MODES.has(opts.sandbox)) {
     fail(`invalid --sandbox '${opts.sandbox}' (expected: ${[...SANDBOX_MODES].join(", ")})`);
   }
   if (opts.effort && !EFFORT_LEVELS.has(opts.effort)) {
@@ -131,7 +136,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-function buildCodexArgs(opts, prompt) {
+function buildCodexArgs(opts, prompt, roleConfigs = []) {
   const args = ["exec"];
   // `resume <id>` puts the session id in the first positional slot; the prompt
   // stays the trailing positional, so the flags in between are unambiguous.
@@ -142,6 +147,8 @@ function buildCodexArgs(opts, prompt) {
   args.push("-c", `sandbox_mode=${opts.sandbox}`);
   if (opts.approval) args.push("-c", `approval_policy=${opts.approval}`);
   if (opts.effort) args.push("-c", `model_reasoning_effort=${opts.effort}`);
+  // Extra `-c` overrides contributed by a role (e.g. tools.web_search=true).
+  for (const override of roleConfigs) args.push("-c", override);
   if (opts.model) args.push("-m", opts.model);
   // --cd only applies to a fresh session; a resumed session keeps its own cwd.
   if (opts.cd && !opts.resume) args.push("-C", opts.cd);
@@ -166,15 +173,82 @@ function stdinHasData() {
   }
 }
 
+// Role name is restricted to a safe filename charset — this also blocks path
+// traversal (no `/` or `.` segments) when resolving roles/<name>.md.
+const ROLE_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
+
+function listRoles() {
+  try {
+    return fs
+      .readdirSync(new URL("../roles/", import.meta.url))
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => file.slice(0, -3))
+      .sort()
+      .join(", ");
+  } catch {
+    return "";
+  }
+}
+
+// Load a role preset: minimal `key: value` front-matter between `---` fences,
+// then a prompt body. `config` is repeatable; each value is a raw `key=value`
+// passed straight through as a `-c` override.
+function loadRole(name) {
+  if (!ROLE_NAME_RE.test(name)) fail(`invalid role name '${name}'`);
+  let text;
+  try {
+    text = fs.readFileSync(new URL(`../roles/${name}.md`, import.meta.url), "utf8");
+  } catch {
+    const available = listRoles();
+    fail(`unknown role '${name}'${available ? ` (available: ${available})` : ""}`);
+  }
+  const role = { sandbox: null, effort: null, configs: [], prompt: text.trim() };
+  const frontMatter = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (frontMatter) {
+    role.prompt = frontMatter[2].trim();
+    for (const line of frontMatter[1].split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const sep = trimmed.indexOf(":");
+      if (sep === -1) continue;
+      const key = trimmed.slice(0, sep).trim();
+      const value = trimmed.slice(sep + 1).trim();
+      if (key === "sandbox") role.sandbox = value;
+      else if (key === "effort") role.effort = value;
+      else if (key === "config") role.configs.push(value);
+    }
+  }
+  if (!role.prompt) fail(`role '${name}' has an empty prompt body`);
+  return role;
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  // Preserve the prompt as written (no trim) so whitespace-significant prompts
-  // survive; a trimmed copy only decides whether an inline prompt is present.
-  const inlinePrompt = opts.promptParts.join(" ");
+  const role = opts.role ? loadRole(opts.role) : null;
+
+  // A role contributes a prompt prefix; the user's args (if any) follow as the
+  // task. Preserve text as written (no trim) so whitespace-significant prompts
+  // survive; a trimmed copy only decides whether a prompt is present.
+  const userPrompt = opts.promptParts.join(" ");
+  const promptSegments = [];
+  if (role) promptSegments.push(role.prompt);
+  if (userPrompt.trim().length > 0) promptSegments.push(userPrompt);
+  const inlinePrompt = promptSegments.join("\n\n");
   const hasInlinePrompt = inlinePrompt.trim().length > 0;
   const pipedStdin = stdinHasData();
   if (!hasInlinePrompt && !pipedStdin) {
-    fail("no prompt provided (pass it as an argument or pipe it via stdin)");
+    fail("no prompt provided (pass it as an argument, pipe it via stdin, or use --role)");
+  }
+
+  // Resolve sandbox/effort: an explicit flag wins, else the role's default, else
+  // the global default. Validate the merged result.
+  opts.sandbox = opts.sandbox ?? role?.sandbox ?? "read-only";
+  if (!SANDBOX_MODES.has(opts.sandbox)) {
+    fail(`invalid sandbox '${opts.sandbox}' (expected: ${[...SANDBOX_MODES].join(", ")})`);
+  }
+  opts.effort = opts.effort ?? role?.effort ?? null;
+  if (opts.effort && !EFFORT_LEVELS.has(opts.effort)) {
+    fail(`invalid effort '${opts.effort}' (expected: ${[...EFFORT_LEVELS].join(", ")})`);
   }
 
   // stdout stays clean (Codex's answer, or raw JSONL). stderr is piped so we can
@@ -184,7 +258,7 @@ async function main() {
   // stdin is ignored, so Codex can never block on a held-open descriptor (e.g.
   // `tail -f | codex-run "..."`) and stray pipe data can't contaminate the prompt.
   const forwardStdin = !hasInlinePrompt && pipedStdin;
-  const child = spawn("codex", buildCodexArgs(opts, hasInlinePrompt ? inlinePrompt : null), {
+  const child = spawn("codex", buildCodexArgs(opts, hasInlinePrompt ? inlinePrompt : null, role?.configs ?? []), {
     stdio: [forwardStdin ? "inherit" : "ignore", "inherit", "pipe"],
   });
 
