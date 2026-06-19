@@ -116,7 +116,7 @@ Built-in roles:
 | `diagnose` | read-only | xhigh | root-cause a failure without changing files |
 | `implement` | workspace-write | high | make a bounded change and verify it |
 | `research` | read-only | xhigh | investigate with web search; gather + cite + synthesize |
-| `second-opinion` | read-only | xhigh | critique a decision/design/plan — anti-sycophancy, web search |
+| `critique` | read-only | xhigh | critique a decision/design/plan — independent, anti-sycophancy, web search |
 
 ```bash
 # Review the current diff
@@ -131,8 +131,8 @@ node scripts/codex-run.mjs --role implement "add a --version flag to the CLI"
 # Research with web search
 node scripts/codex-run.mjs --role research "current best practices for rate-limiting"
 
-# Second opinion on a decision or design (reads files for context; web search on)
-node scripts/codex-run.mjs --role second-opinion "should we keep the adapter stateless instead of a daemon? <your reasoning>"
+# Critique a decision or design — an independent second opinion (reads files for context; web search on)
+node scripts/codex-run.mjs --role critique "should we keep the adapter stateless instead of a daemon? <your reasoning>"
 ```
 
 **Precedence:** an explicit flag always overrides a role default, which overrides
