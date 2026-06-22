@@ -1,6 +1,6 @@
 ---
 name: codex-runner
-description: Use to delegate a coding or analysis task to OpenAI Codex (gpt-5.x) from Claude Code — for a second opinion, an independent implementation or diagnosis pass, or to parallelize work across multiple Codex instances. Trigger when the user asks to "run Codex", "ask Codex", "use Codex", get a Codex review, or hand a task to Codex.
+description: Use to delegate a coding, analysis or research task to OpenAI Codex (gpt-5.x) from Claude Code — for a critique, an independent implementation or diagnosis pass, or to parallelize work across multiple Codex instances. Trigger when the user asks to "run Codex", "ask Codex", "use Codex", get a Codex review, or hand a task to Codex.
 ---
 
 # Codex runner
