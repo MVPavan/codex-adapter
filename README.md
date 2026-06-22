@@ -37,14 +37,29 @@ run as many as you want at once. There is no lock to bypass.
 
 ## Install as a Claude Code plugin
 
-Point Claude Code at this directory as a plugin (it auto-discovers the commands
-and the `codex-runner` skill). Inside Claude Code:
+Two commands, on any machine:
+
+```text
+/plugin marketplace add MVPavan/codex-adapter
+/plugin install codex-adapter@codex-adapter
+```
+
+Run `/plugin update codex-adapter@codex-adapter` to pick up new versions.
+
+**Prerequisite:** the [Codex CLI](https://developers.openai.com/codex) must be on
+your `PATH` (`npm i -g @openai/codex`) and authenticated (`codex login`). The
+runner exits with a clear message if it isn't — the plugin can't install it for you.
+
+You then get:
 
 - **`/codex <prompt>`** — delegate a free-form task or question to Codex.
 - **`/codex-review`**, **`/codex-diagnose`**, **`/codex-implement`**,
   **`/codex-research`**, **`/codex-critique`** — the role presets (see [Roles](#roles)).
 - The **`codex-runner`** skill lets Claude delegate to Codex on its own,
   including running several instances in parallel.
+
+For local development, skip the marketplace and load the repo directly:
+`claude --plugin-dir /path/to/codex-adapter`.
 
 ## Use the runner directly
 
