@@ -3,7 +3,7 @@ description: Get an independent Codex critique / second opinion on a decision, d
 argument-hint: "<decision/design + context>"
 ---
 
-Have OpenAI Codex give an independent second opinion on the decision or design below.
+Have OpenAI Codex give an independent research on the decision or design below.
 
 Proposal: $ARGUMENTS
 
