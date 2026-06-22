@@ -55,6 +55,7 @@ You then get:
 - **`/codex <prompt>`** — delegate a free-form task or question to Codex.
 - **`/codex-review`**, **`/codex-diagnose`**, **`/codex-implement`**,
   **`/codex-research`**, **`/codex-critique`** — the role presets (see [Roles](#roles)).
+- **`/codex-check`** — verify the Codex CLI is installed and authenticated.
 - The **`codex-runner`** skill lets Claude delegate to Codex on its own,
   including running several instances in parallel.
 
