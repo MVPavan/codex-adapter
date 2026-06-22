@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Call OpenAI Codex from Claude Code via `codex exec` — concurrent, role-based, no broker.",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {
       "name": "codex-adapter",
       "description": "Call OpenAI Codex (gpt-5.x) from Claude Code via `codex exec`. Roles, free-form delegation, true concurrency, no broker or single-instance lock.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "PavanMV",
         "email": "mvpavan42@gmail.com"
