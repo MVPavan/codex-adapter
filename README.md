@@ -37,12 +37,14 @@ run as many as you want at once. There is no lock to bypass.
 
 ## Install as a Claude Code plugin
 
-Point Claude Code at this directory as a plugin (it auto-discovers the
-`/codex` command and the `codex-runner` skill). Inside Claude Code:
+Point Claude Code at this directory as a plugin (it auto-discovers the commands
+and the `codex-runner` skill). Inside Claude Code:
 
-- **`/codex <prompt>`** — delegate a task or question to Codex and get its answer.
+- **`/codex <prompt>`** — delegate a free-form task or question to Codex.
+- **`/codex-review`**, **`/codex-diagnose`**, **`/codex-implement`**,
+  **`/codex-research`**, **`/codex-critique`** — the role presets (see [Roles](#roles)).
 - The **`codex-runner`** skill lets Claude delegate to Codex on its own,
-  including running several Codex instances in parallel.
+  including running several instances in parallel.
 
 ## Use the runner directly
 
